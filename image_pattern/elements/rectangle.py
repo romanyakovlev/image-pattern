@@ -86,7 +86,7 @@ class Rectangle(Element, Canvas):
         start_point = self._get_start_point(
             data['horizontal_alignment'],
             data['vertical_alignment'],
-            self.size,
+            data['size'],
         )
 
         return RectangleDrawer(
