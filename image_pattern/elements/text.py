@@ -108,7 +108,7 @@ class Text(Element):
                 data['vertical_alignment'],
                 margin=data['margin'],
             )
-            font = ImageFont.truetype(str(data['font'].absolute()), size=self.font_size, encoding='UTF-8')
+            font = ImageFont.truetype(self._resolve_font(data['font']), size=self.font_size, encoding='UTF-8')
             text = self._get_multiline_text(data['text'], font, bounded_width)
             line_height = data['line_height'] or font.getsize(data['text'])[1]
             size = font.getsize_multiline('\n'.join(text), spacing=line_height - data['font_size'])
@@ -165,6 +165,13 @@ class Text(Element):
         text_lines = wrap(text, line_length)
 
         return text_lines
+
+    @staticmethod
+    def _resolve_font(font: Union[Path, ContextVar]):
+        if isinstance(font, Path):
+            return str(font.absolute())
+
+        return font
 
     def _get_bounded_size(
             self,
