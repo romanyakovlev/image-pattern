@@ -167,7 +167,7 @@ class Text(Element):
         return text_lines
 
     @staticmethod
-    def _resolve_font(font: Union[Path, ContextVar]):
+    def _resolve_font(font: Union[Path, ContextVar]) -> str:
         if isinstance(font, Path):
             return str(font.absolute())
 
