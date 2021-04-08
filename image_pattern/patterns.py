@@ -3,6 +3,7 @@ from typing import (
     TYPE_CHECKING,
     List,
     Optional,
+    Any,
 )
 from io import BytesIO
 from pydantic import BaseModel
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class Pattern(BaseModel):
-    context: Optional[Context]
+    context: Any
     canvas: Canvas
     layers: List[Layer] = []
 

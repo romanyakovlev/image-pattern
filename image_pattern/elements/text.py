@@ -4,15 +4,23 @@ from typing import (
     Tuple,
     Union,
     Optional,
+    Callable,
     TYPE_CHECKING,
 )
 from pathlib import Path
-from textwrap import wrap
+
+if TYPE_CHECKING:  # pragma: no cover
+    from PIL.Image import Image as PillowImage
+
 from PIL import (
+    Image,
     ImageFont,
     ImageDraw,
 )
 from PIL.ImageFont import FreeTypeFont as PillowImageFont
+from PIL.Image import Image as PillowImage
+
+from django.contrib.staticfiles.storage import staticfiles_storage
 
 from .base import (
     Drawer,
@@ -21,12 +29,12 @@ from .base import (
     VerticalAlignment,
     Element,
 )
-from ..context import (
-    ContextVar,
-)
+from ..context import ContextVar
+from ..utils import is_emoji
+from ..textwrap import wrap
 
-if TYPE_CHECKING:  # pragma: no cover
-    from PIL.Image import Image as PillowImage
+import tempfile
+import math
 
 
 class TextDrawer(Drawer):
@@ -37,20 +45,31 @@ class TextDrawer(Drawer):
     horizontal_alignment: HorizontalAlignment = HorizontalAlignment.LEFT.value
     vertical_alignment: VerticalAlignment = VerticalAlignment.TOP.value
     margin: Position = Position()
+    get_emoji_content: Optional[Callable]
 
     def draw(self, image: PillowImage) -> PillowImage:
         return self.draw_text(image, self.text, self.font)
 
     def draw_text(self, image: PillowImage, text: List[str], font: PillowImageFont):
         draw = ImageDraw.Draw(image)
-
         for line_index, line in enumerate(text):
             font_width, _ = font.getsize(line)
             _, height_offset = font.getoffset(line)
             x = self._get_x(font_width)
             y = self._get_y(line_index, self.line_height, height_offset)
-            draw.text((x, y), line, font=font, fill=self.font_color)
-
+            for c in line:
+                if not is_emoji(c):
+                    draw.text((x, y), c, font=font, fill=self.font_color)
+                    x += math.ceil(draw.textsize(c, font)[0])
+                else:
+                    emoji_content = self.get_emoji_content(c)
+                    if emoji_content:
+                        with tempfile.NamedTemporaryFile(mode='wb') as f:
+                            temp_filename = f.name
+                            f.write(emoji_content)
+                            emoji_img = Image.open(temp_filename)
+                            image.paste(emoji_img, (x, y), emoji_img)
+                        x += math.ceil(emoji_img.width)
         return image
 
     def _get_x(self, text_width: int) -> int:
@@ -92,6 +111,7 @@ class Text(Element):
     text: Union[str, ContextVar]
     line_height: Union[int, ContextVar, None]
     margin: Union[Position, ContextVar, None]
+    get_emoji_content: Optional[Callable]
 
     def __init__(self, **kwargs):
         kwargs['margin'] = kwargs.get('margin', Position())
@@ -99,7 +119,6 @@ class Text(Element):
 
     def create_drawer(self, canvas: PillowImage, context=None):
         data = self.collect_data(context)
-
         if data['text']:
 
             bounded_width, bounded_height = self._get_bounded_size(
@@ -130,6 +149,7 @@ class Text(Element):
                 margin=data['margin'],
                 size=size,
                 start_point=start_point,
+                get_emoji_content=self.get_emoji_content,
             )
         else:
             return Drawer(
@@ -160,10 +180,7 @@ class Text(Element):
 
     @staticmethod
     def _get_multiline_text(text, font: PillowImageFont, width: int) -> List[str]:
-        font_width, _ = font.getsize(text)
-        line_length = int((width / (font_width / len(text))))
-        text_lines = wrap(text, line_length)
-
+        text_lines = wrap(text, font, width)
         return text_lines
 
     @staticmethod
