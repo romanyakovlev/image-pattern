@@ -61,7 +61,7 @@ class TextDrawer(Drawer):
                 if not is_emoji(c):
                     draw.text((x, y), c, font=font, fill=self.font_color)
                     x += math.ceil(draw.textsize(c, font)[0])
-                else:
+                elif self.get_emoji_content:
                     emoji_content = self.get_emoji_content(c)
                     if emoji_content:
                         with tempfile.NamedTemporaryFile(mode='wb') as f:
