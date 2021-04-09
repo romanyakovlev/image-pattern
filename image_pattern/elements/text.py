@@ -68,8 +68,9 @@ class TextDrawer(Drawer):
                             temp_filename = f.name
                             f.write(emoji_content)
                             emoji_img = Image.open(temp_filename)
-                            image.paste(emoji_img, (x, y), emoji_img)
-                        x += math.ceil(emoji_img.width)
+                            resized_emoji_img = emoji_img.resize((font.size, font.size))
+                            image.paste(resized_emoji_img, (x, y), resized_emoji_img)
+                        x += math.ceil(resized_emoji_img.width)
         return image
 
     def _get_x(self, text_width: int) -> int:

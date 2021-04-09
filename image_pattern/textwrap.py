@@ -8,10 +8,9 @@ class CustomTextWrapper(TextWrapper):
     Нужен из-за появления эмодзи
     """
 
-    def __init__(self, font, width=70, emoji_width=64, **kwargs):
+    def __init__(self, font, width=70, **kwargs):
         super().__init__(width, **kwargs)
         self.font = font
-        self.emoji_width = emoji_width
 
     def get_chunk_len(self, chunk):
         """
@@ -23,7 +22,7 @@ class CustomTextWrapper(TextWrapper):
             if not is_emoji(c):
                 counter += self.font.getsize(c)[0]
             else:
-                counter += self.emoji_width
+                counter += self.font.size
         return counter
 
     def _wrap_chunks(self, chunks):
