@@ -58,7 +58,7 @@ class TextDrawer(Drawer):
             x = self._get_x(font_width)
             y = self._get_y(line_index, self.line_height, height_offset)
             for c in line:
-                if not is_emoji(c):
+                if not is_emoji(c) and c.isprintable():
                     draw.text((x, y), c, font=font, fill=self.font_color)
                     x += math.ceil(draw.textsize(c, font)[0])
                 elif self.get_emoji_content:
